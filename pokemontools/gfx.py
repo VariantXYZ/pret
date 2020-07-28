@@ -880,13 +880,13 @@ def convert_to_1bpp(filenames=[]):
         else:
             raise Exception("Don't know how to convert {} to 1bpp!".format(filename))
 
-def convert_to_png(filenames=[]):
+def convert_to_png(filenames=[], height=0, width=0):
     for filename in filenames:
         filename, name, extension = try_decompress(filename)
         if extension == '.1bpp':
             export_1bpp_to_png(filename)
         elif extension == '.2bpp':
-            export_2bpp_to_png(filename)
+            export_2bpp_to_png(filename, height=height, width=width)
         elif extension == '.png':
             pass
         else:
@@ -923,6 +923,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('mode')
     ap.add_argument('filenames', nargs='*')
+    ap.add_argument('--height', default=0, type=int)
+    ap.add_argument('--width', default=0, type=int)
     args = ap.parse_args()
 
     method = {
@@ -936,7 +938,7 @@ def main():
     if method == None:
         raise Exception("Unknown conversion method!")
 
-    method(args.filenames)
+    method(args.filenames, args.height, args.width)
 
 if __name__ == "__main__":
     main()
