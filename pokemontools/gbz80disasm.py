@@ -223,7 +223,7 @@ z80_table = [
 	('rst $8', 0),                 # cf
 	('ret nc', 0),                 # d0
 	('pop de', 0),                 # d1
-	('jp nc, ${:04x}', 2),         # d2
+	('jp nc, {}', 2),         # d2
 	('db $d3', 0),                 # d3
 	('call nc, {}', 2),            # d4
 	('push de', 0),                # d5
@@ -231,13 +231,13 @@ z80_table = [
 	('rst $10', 0),                # d7
 	('ret c', 0),                  # d8
 	('reti', 0),                   # d9
-	('jp c, ${:04x}', 2),          # da
+	('jp c, {}', 2),          # da
 	('db $db', 0),                 # db
 	('call c, {}', 2),             # dc
 	('db $dd', 2),                 # dd
 	('sbc ${:02x}', 1),            # de
 	('rst $18', 0),                # df
-	('ld [{}], a', 1),             # e0
+	('ldh [{}], a', 1),             # e0
 	('pop hl', 0),                 # e1
 	('ld [$ff00+c], a', 0),        # e2
 	('db $e3', 0),                 # e3
@@ -253,7 +253,7 @@ z80_table = [
 	('db $ed', 2),                 # ed
 	('xor ${:02x}', 1),            # ee
 	('rst $28', 0),                # ef
-	('ld a, [{}]', 1),             # f0
+	('ldh a, [{}]', 1),             # f0
 	('pop af', 0),                 # f1
 	('db $f2', 0),                 # f2
 	('di', 0),                     # f3
@@ -329,7 +329,7 @@ def get_local_address(address):
 	"""
 	Return the local address of a rom address.
 	"""
-	bank = address / 0x4000
+	bank = address // 0x4000
 	address &= 0x3fff
 	if bank:
 		return address + 0x4000
@@ -440,13 +440,13 @@ def get_banked_ram_sym(sym, address):
 	return None
 
 def create_address_comment(offset):
-	comment_bank = offset / 0x4000
+	comment_bank = offset // 0x4000
 	if comment_bank != 0:
 		comment_bank_addr = (offset % 0x4000) + 0x4000
 	else:
 		comment_bank_addr = offset
-		
-	return " ; %x (%x:%x)" % (offset, comment_bank, comment_bank_addr)
+
+	return f" ; {offset:X} ({comment_bank:02X}:{comment_bank_addr:04X})"
 			
 def offset_is_used(labels, offset):
 	if offset in labels.keys():
@@ -566,7 +566,7 @@ class Disassembler(object):
 		
 		debug = False
 				
-		bank_id = start_offset / 0x4000
+		bank_id = start_offset // 0x4000
 		
 		stop_offset_undefined = False
 		
@@ -587,7 +587,7 @@ class Disassembler(object):
 		byte_labels = {}
 		data_tables = {}
 		
-		output = "Func_%x:%s\n" % (start_offset,create_address_comment(start_offset))
+		output = f"Func_{start_offset:04X}:{create_address_comment(start_offset)}\n"
 		is_data = False
 		
 		while True:
@@ -679,7 +679,7 @@ class Disassembler(object):
 								opcode_output_str = byte_labels[local_target_address]["name"]
 							elif target_address < start_offset:
 							# if we're jumping to an address that is located before the start offset, assume it is a function
-								opcode_output_str = "Func_%x" % target_address
+								opcode_output_str = f"Func_{target_address:04X}"
 							else:
 							# create a new label
 								opcode_output_str = asm_label(target_address)
@@ -711,7 +711,7 @@ class Disassembler(object):
 							high_ram_label = self.find_label(high_ram_address, bank_id)
 							# if we couldn't find one, default to the address
 							if high_ram_label is None:
-								high_ram_label = "$%x" % high_ram_address
+								high_ram_label = f"${high_ram_address:04X}"
 							
 							# format the resulting argument into the output string
 							opcode_output_str = opcode_str.format(high_ram_label)
@@ -736,7 +736,7 @@ class Disassembler(object):
 					if opcode_byte in call_commands + absolute_jumps:
 						if target_label is None:
 						# if this is a call or jump opcode and the target label is not defined, create an undocumented label descriptor
-							target_label = "Func_%x" % target_offset
+							target_label = f"Func_{target_offset:04X}"
 
 					else:
 					# anything that isn't a call or jump is a load-based command
@@ -758,7 +758,7 @@ class Disassembler(object):
 									
 							elif local_target_offset >= 0x8000 or not parse_data:
 							# do not create a label if this is a wram label or parse_data is not set
-								target_label = "$%x" % local_target_offset
+								target_label = f"${local_target_offset:04X}"
 							
 							elif local_target_offset in data_tables.keys():
 							# if the target offset has been created as a data label, increase usage and use the already defined name
@@ -840,7 +840,7 @@ class Disassembler(object):
 						output_lines.pop(i)
 					elif label_name in line:
 					# if the label is used in a load-based opcode, replace it with the raw hex reference
-						output_lines[i] = output_lines[i].replace(label_name, "$%x" % get_local_address(label_addr))
+						output_lines[i] = output_lines[i].replace(label_name, f"${get_local_address(label_addr):04X}")
 		
 		# convert the modified list of lines into a string
 		output = "".join(output_lines)

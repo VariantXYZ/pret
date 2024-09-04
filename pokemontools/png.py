@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+import sys
 
 # png.py - PNG encoder/decoder in pure Python
 #
@@ -193,7 +194,10 @@ def isarray(x):
     return isinstance(x, array)
 
 def tostring(row):
-    return row.tostring()
+    if sys.version_info[1] >= 2:
+        return row.tobytes()
+    else:
+        return row.tostring()
 
 def interleave_planes(ipixels, apixels, ipsize, apsize):
     """
